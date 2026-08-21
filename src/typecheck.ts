@@ -1,4 +1,4 @@
-import type {Range} from "./junction-defs";
+import type { Range } from "./junction-defs";
 import {
   type Term,
   sort,

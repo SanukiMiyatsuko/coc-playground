@@ -1,0 +1,33 @@
+Program ::= Decl* EOF
+
+Decl ::=
+| "var" Ident BinderList? ":" Term
+| "def" Ident BinderList? ":" Term ":=" Term
+| "eval" Term
+
+Term ::=
+| LamTerm
+| PiTerm
+| LetTerm
+| ArrowTerm
+
+LamTerm ::= "fun" ( Binder | BinderList ) "=>" Term
+PiTerm ::= "forall" ( Binder | BinderList ) "," Term
+LetTerm ::= "let" Ident BinderList? ":" Term ":=" Term "in" Term
+
+BinderList ::= ( "(" Binder ")" )+
+Binder ::= Ident+ ":" Term
+
+ArrowTerm ::= AppTerm ( "->" AppTerm )*
+AppTerm ::= AtomicTerm ( AtomicTerm )*
+
+AtomicTerm ::=
+| Sort
+| Ident
+| "(" Term ")"
+
+Sort ::=
+| "Prop"
+| "Type"
+
+Ident ::= "[a-zA-Z_][a-zA-Z0-9_']*"

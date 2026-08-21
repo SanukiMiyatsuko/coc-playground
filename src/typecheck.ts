@@ -18,10 +18,9 @@ import {
   succ,
   err,
   isErr,
+  isSucc,
   type Unit,
   unit,
-  tapErr,
-  isSucc,
 } from "./junction-defs";
 import { alphaEq, shift, subst } from "./core-defs";
 
@@ -361,15 +360,6 @@ function conv(jc: JudgContext, t0: Term, t1: Term): TCResult<Unit, TypeError> {
     return succ({ value: unit, derivation: der });
   }
   return convWhNF(jc, t0, t1);
-}
-
-function tcTapErr<A>(
-  r: Result<A, TypeError>,
-  range?: Range,
-): Result<A, TypeError> {
-  return tapErr(r)((error) => {
-    if (!error.range) error.range = range;
-  });
 }
 
 function wellFormedLocal(jc: JudgContext): TCResult<Unit, TypeError> {

@@ -1,8 +1,10 @@
+import type { Range } from "./junction-defs";
+
 export type Program = Decl[];
 
 export type Decl =
-  | { tag: "VarDecl"; name: string; binders: Binder[]; typeTerm: Term }
-  | { tag: "DefDecl"; name: string; binders: Binder[]; typeTerm: Term; body: Term }
+  | { tag: "VarDecl"; name: string; nameRange: Range; binders: Binder[]; typeTerm: Term }
+  | { tag: "DefDecl"; name: string; nameRange: Range; binders: Binder[]; typeTerm: Term; body: Term }
   | { tag: "EvalDecl"; term: Term };
 
 export type Term =
@@ -15,7 +17,7 @@ export type Term =
   | Ident;
 
 export type Sort = { tag: "Sort"; value: "Prop" | "Type" };
-export type Ident = { tag: "Ident"; name: string };
+export type Ident = { tag: "Ident"; name: string; range: Range };
 
 export type Binder = {
   names: string[];

@@ -20,7 +20,7 @@ def ref_Eq (A : Prop) (a : A) : Eq A a a := fun P : A -> Prop => id (P a)
 
 def symm_Eq (A : Prop) (a b : A) : Eq A a b -> Eq A b a :=
   fun (eqab : Eq A a b) (P : A -> Prop) =>
-    let q := eqab (fun x : A => P x -> P a) in
+    let q : (P a -> P a) -> P b -> P a := eqab (fun x : A => P x -> P a) in
     q (id (P a))
 
 def trans_Eq (A : Prop) (a b c : A) : Eq A a b -> Eq A b c -> Eq A a c :=

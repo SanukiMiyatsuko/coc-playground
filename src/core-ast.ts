@@ -25,26 +25,27 @@ export const globalElem = (name: string, type: Term, def: Term | undefined): Glo
   def ? { tag: "Def", name, type, def } : { tag: "Var", name, type };
 
 export type LocalElement =
-  | { tag: "Var"; name?: string; type: Term }
-  | { tag: "Def"; name?: string; type: Term; def: Term };
+  | { tag: "Var"; type: Term }
+  | { tag: "Def"; type: Term; def: Term };
 
 export type LocalContext = LocalElement[];
 
-export const localElem = (name: string | undefined, type: Term, def?: Term): LocalElement =>
-  def ? { tag: "Def", name, type, def } : { tag: "Var", name, type };
+export const localElem = (type: Term, def?: Term): LocalElement =>
+  def ? { tag: "Def", type, def } : { tag: "Var", type };
 
 export type JudgContext = { global: GlobalContext; local: LocalContext };
 
 export const judgCtx = (global: GlobalContext, local: LocalContext): JudgContext => ({ global: [...global], local: [...local] });
 
-export function pushLocal(jc: JudgContext, name: string | undefined, type: Term, def?: Term): JudgContext {
-  return judgCtx(jc.global, [localElem(name, type, def), ...jc.local]);
+export function pushLocal(jc: JudgContext, type: Term, def?: Term): JudgContext {
+  return judgCtx(jc.global, [localElem(type, def), ...jc.local]);
 }
 
 export type Judgment =
   | { tag: "Reduction"; context: JudgContext; from: Term; to: Term }
   | { tag: "Conversion"; context: JudgContext; eqLeft: Term; eqRight: Term }
   | { tag: "Synthesis"; context: JudgContext; fromTerm: Term; toType: Term }
+  | { tag: "Check"; context: JudgContext; toTerm: Term; fromType: Term }
   | { tag: "WellFormed"; context: JudgContext };
 
 export type Derivation = {

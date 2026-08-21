@@ -3,8 +3,8 @@ import { type Token, type TokenType } from "./tokenizer";
 import * as AST from "./surface-ast";
 
 export type ParserError =
-| { tag: "UnexpectedToken"; expected: string; got: Token; pos: Position }
-| { tag: "Message"; msg: string; pos: Position };
+  | { tag: "UnexpectedToken"; expected: string; got: Token; pos: Position }
+  | { tag: "Message"; msg: string; pos: Position };
 
 const ATOMIC_START: TokenType[] = ["RES_PROP", "RES_TYPE", "IDENT", "LPAREN"];
 

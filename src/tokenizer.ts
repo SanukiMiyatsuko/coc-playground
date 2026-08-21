@@ -1,30 +1,30 @@
 import { type Position, type Range, type Result, succ, err, isErr } from "./junction-defs";
 
 export type TokenizerError =
-| { tag: "UnexpectedChar"; char: string; pos: Position }
-| { tag: "UnclosedComment"; pos: Position };
+  | { tag: "UnexpectedChar"; char: string; pos: Position }
+  | { tag: "UnclosedComment"; pos: Position };
 
 export type TokenType =
-| "BLANKS"
-| "COMMENT"
-| "RES_VAR"
-| "RES_DEF"
-| "RES_EVAL"
-| "RES_FUN"
-| "RES_FORALL"
-| "RES_LET"
-| "RES_IN"
-| "RES_PROP"
-| "RES_TYPE"
-| "ASSIGN"
-| "COLON"
-| "FATARROW"
-| "ARROW"
-| "COMMA"
-| "LPAREN"
-| "RPAREN"
-| "IDENT"
-| "EOF";
+  | "BLANKS"
+  | "COMMENT"
+  | "RES_VAR"
+  | "RES_DEF"
+  | "RES_EVAL"
+  | "RES_FUN"
+  | "RES_FORALL"
+  | "RES_LET"
+  | "RES_IN"
+  | "RES_PROP"
+  | "RES_TYPE"
+  | "ASSIGN"
+  | "COLON"
+  | "FATARROW"
+  | "ARROW"
+  | "COMMA"
+  | "LPAREN"
+  | "RPAREN"
+  | "IDENT"
+  | "EOF";
 
 export type Token = {
   type: TokenType;

@@ -1,0 +1,155 @@
+inductive S where
+| prop
+| type
+deriving DecidableEq
+
+open S
+
+inductive Term where
+| sort : S → Term
+| free : String → Term
+| bin : Nat → Term
+| lam : Term → Term → Term
+| pai : Term → Term → Term
+| app : Term → Term → Term
+| letIn : Term → Term → Term → Term
+deriving DecidableEq
+
+open Term
+
+def Shift (t : Term) (d : Nat) (c : Nat) : Term :=
+  match t with
+  | sort x => sort x
+  | free x => free x
+  | bin i =>
+    if i ≥ c
+    then bin (i + d)
+    else bin i
+  | lam M n => lam (Shift M d c) (Shift n d (c + 1))
+  | pai M N => pai (Shift M d c) (Shift N d (c + 1))
+  | app f m => app (Shift f d c) (Shift m d c)
+  | letIn M m n => letIn (Shift M d c) (Shift m d c) (Shift n d (c + 1))
+
+def Subst (t : Term) (idx : Nat) (u : Term) : Term :=
+  match t with
+  | sort x => sort x
+  | free x => free x
+  | bin i =>
+    if i = idx
+    then u
+    else if i > idx
+      then bin (i - 1)
+      else bin i
+  | lam M n => lam (Subst M idx u) (Subst n (idx + 1) (Shift u 1 0))
+  | pai M N => pai (Subst M idx u) (Subst N (idx + 1) (Shift u 1 0))
+  | app f m => app (Subst f idx u) (Subst m idx u)
+  | letIn M m n => letIn (Subst M idx u) (Subst m idx u) (Subst n (idx + 1) (Shift u 1 0))
+
+inductive Decl where
+| assum (type : Term)
+| defn (type val : Term)
+
+open Decl
+
+abbrev Global := List (String × Decl)
+
+abbrev Local := List Decl
+
+def typeOfDecl : Decl → Term
+| assum M => M
+| defn M _ => M
+
+def lookupGlobal (c : String) : Global → Option Decl
+| [] => none
+| (x, d) :: Δ => if c = x then some d else lookupGlobal c Δ
+
+def lookupLocal (i : Nat) (Γ : Local) : Option Decl := Γ[i]?
+
+inductive Fresh (c : String) : Global → Prop where
+| nil : Fresh c []
+| cons (x : String) (d : Decl) (Δ : Global) :
+  c ≠ x → Fresh c Δ → Fresh c ((x, d) :: Δ)
+
+inductive Red : Global → Local → Term → Term → Prop where
+| beta (Δ Γ M n m) : Red Δ Γ (app (lam M n) m) (Subst n 0 m)
+| zeta (Δ Γ M m n) : Red Δ Γ (letIn M m n) (Subst n 0 m)
+| delta_global (Δ Γ x M m) : lookupGlobal x Δ = some (defn M m) → Red Δ Γ (free x) m
+| delta_local (Δ Γ i M m) : lookupLocal i Γ = some (defn M m) → Red Δ Γ (bin i) (Shift m (i + 1) 0)
+| cong_app (Δ Γ f f' m) : Red Δ Γ f f' → Red Δ Γ (app f m) (app f' m)
+
+inductive DefEq : Global → Local → Term → Term → Prop where
+| step (Δ Γ M N) : Red Δ Γ M N → DefEq Δ Γ M N
+| refl (Δ Γ M) : DefEq Δ Γ M M
+| symm (Δ Γ M N) : DefEq Δ Γ M N → DefEq Δ Γ N M
+| trans (Δ Γ M N L) : DefEq Δ Γ M N → DefEq Δ Γ N L → DefEq Δ Γ M L
+| cong_lam (Δ Γ M M' n n') :
+  DefEq Δ Γ M M' →
+  DefEq Δ (assum M :: Γ) n n' →
+  DefEq Δ Γ (lam M n) (lam M' n')
+| cong_pai (Δ Γ M M' N N') :
+  DefEq Δ Γ M M' →
+  DefEq Δ (assum M :: Γ) N N' →
+  DefEq Δ Γ (pai M N) (pai M' N')
+| cong_app (Δ Γ f f' m m') :
+  DefEq Δ Γ f f' →
+  DefEq Δ Γ m m' →
+  DefEq Δ Γ (app f m) (app f' m')
+| eta (Δ Γ M f) :
+  DefEq Δ Γ (lam M (app (Shift f 1 0) (bin 0))) f
+
+mutual
+  inductive WellFormed : Global → Local → Prop where
+  | empty : WellFormed [] []
+  | global_assumption (Δ M s c) :
+    WellFormed Δ [] →
+    Infer Δ [] M (sort s) →
+    Fresh c Δ →
+    WellFormed ((c, assum M) :: Δ) []
+  | global_definition (Δ m M c) :
+    WellFormed Δ [] →
+    Infer Δ [] m M →
+    Fresh c Δ →
+    WellFormed ((c, defn M m) :: Δ) []
+  | local_assumption (Δ Γ M s) :
+    WellFormed Δ Γ →
+    Infer Δ Γ M (sort s) →
+    WellFormed Δ (assum M :: Γ)
+  | local_definition (Δ Γ m M) :
+    WellFormed Δ Γ →
+    Infer Δ Γ m M →
+    WellFormed Δ (defn M m :: Γ)
+
+  inductive Infer : Global → Local → Term → Term → Prop where
+  | ax (Δ Γ) :
+    WellFormed Δ Γ →
+    Infer Δ Γ (sort prop) (sort type)
+  | free (Δ Γ x d) :
+    WellFormed Δ Γ →
+    lookupGlobal x Δ = some d →
+    Infer Δ Γ (free x) (typeOfDecl d)
+  | bin (Δ Γ i d) :
+    WellFormed Δ Γ →
+    lookupLocal i Γ = some d →
+    Infer Δ Γ (bin i) (Shift (typeOfDecl d) (i + 1) 0)
+  | lam (Δ Γ M n N s) :
+    Infer Δ (assum M :: Γ) n N →
+    Infer Δ Γ (pai M N) (sort s) →
+    Infer Δ Γ (lam M n) (pai M N)
+  | pi (Δ Γ M N s1 s2) :
+    Infer Δ Γ M (sort s1) →
+    Infer Δ (assum M :: Γ) N (sort s2) →
+    Infer Δ Γ (pai M N) (sort s2)
+  | app (Δ Γ f m M N) :
+    Infer Δ Γ f (pai M N) →
+    Infer Δ Γ m M →
+    Infer Δ Γ (app f m) (Subst N 0 m)
+  | letIn (Δ Γ M m n N) :
+    Infer Δ Γ m M →
+    Infer Δ (defn M m :: Γ) n N →
+    Infer Δ Γ (letIn M m n) (Subst N 0 m)
+  | conv (Δ Γ M A B s) :
+    Infer Δ Γ M A →
+    Infer Δ Γ B (sort s) →
+    DefEq Δ Γ A B →
+    Infer Δ Γ M B
+end

@@ -105,7 +105,7 @@ export function whNF(jc: JudgContext, t: Term): TCResult<Term, Term> {
       break;
     }
     case "letin": {
-      const res = shift(subst(t.body, 0, shift(t.def, 1, 0)), -1, 0);
+      const res = subst(t.body, 0, t.def);
       const der: Derivation = {
         rule: "zeta",
         judgment: {
@@ -147,7 +147,7 @@ export function whNF(jc: JudgContext, t: Term): TCResult<Term, Term> {
         children: funDerivs,
       };
       if (funTerm.tag === "lam") {
-        const res = shift(subst(funTerm.body, 0, shift(t.arg, 1, 0)), -1, 0);
+        const res = subst(funTerm.body, 0, t.arg);
         const derbeta: Derivation = {
           rule: "beta",
           judgment: {
@@ -557,11 +557,7 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
       const newJc = pushLocal(jc, defType, t.def);
       const bodyType = typeInfer(newJc, t.body);
       if (isErr(bodyType)) return bodyType;
-      const res = shift(
-        subst(bodyType.succ.value, 0, shift(t.def, 1, 0)),
-        -1,
-        0,
-      );
+      const res = subst(bodyType.succ.value, 0, t.def);
       const der: Derivation = {
         rule: "let",
         judgment: {
@@ -602,7 +598,7 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
           actual: argType.succ.value,
           expected: funTypeNF.type,
         });
-      const res = shift(subst(funTypeNF.body, 0, shift(t.arg, 1, 0)), -1, 0);
+      const res = subst(funTypeNF.body, 0, t.arg);
       const der: Derivation = {
         rule: "application",
         judgment: {

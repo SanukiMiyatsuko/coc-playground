@@ -16,8 +16,6 @@ def Eq (A : Prop) (a b : A) : Prop := forall P : A -> Prop, P a -> P b
 def subst_Eq (A : Prop) (P : A -> Prop) (a b : A) (eq : Eq A a b) (pa : P a) : P b :=
   eq P pa
 
-def ref_Eq (A : Prop) (a : A) : Eq A a a := fun P : A -> Prop => id (P a)
-
 def symm_Eq (A : Prop) (a b : A) : Eq A a b -> Eq A b a :=
   fun (eqab : Eq A a b) (P : A -> Prop) =>
     let q : (P a -> P a) -> P b -> P a := eqab (fun x : A => P x -> P a) in
@@ -46,13 +44,13 @@ function runner(text: string) {
   const tokens = Tokenizer.mkTokens(text);
   if (isErr(tokens)) return "tokenize";
   const parsed = Parser.parseProgram(tokens.succ);
-  if (isErr(parsed)) return `message : ${parsed.err.tag}, char : ${parsed.err.pos.character}, line : ${parsed.err.pos.line}` ;
+  if (isErr(parsed)) return "parse" ;
   const checked = scopeCheckProgram(parsed.succ);
   if (isErr(checked)) return "scope";
   const desugared = desugarProgram(parsed.succ);
   const core = elabGlobalContext(desugared);
   const well = wellFormedGlobal(core);
-  if (isErr(well)) return "typecheck";
+  if (isErr(well)) return `${well.err.error.tag === "TypeMismatch" ? `act : ${JSON.stringify(well.err.error.actual)}, exp : ${JSON.stringify(well.err.error.expected)}` : ""}`;
   return "ok";
 }
 

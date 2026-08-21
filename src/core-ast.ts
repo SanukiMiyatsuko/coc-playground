@@ -21,7 +21,7 @@ export type GlobalElement =
 
 export type GlobalContext = GlobalElement[];
 
-export const globalElem = (name: string, type: Term, def: Term | undefined): GlobalElement =>
+export const globalElem = (name: string, type: Term, def?: Term): GlobalElement =>
   def ? { tag: "Def", name, type, def } : { tag: "Var", name, type };
 
 export type LocalElement =

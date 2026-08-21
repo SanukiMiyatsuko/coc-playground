@@ -40,7 +40,7 @@ export function elabGlobalContext(ctx: DA.Program): CA.GlobalContext {
   for (const e of ctx) {
     const convert = (t: DA.Term) => elabTerm(t, []);
     if (e.tag === "VarDecl")
-      res.push(CA.globalElem(e.name, convert(e.typeTerm), undefined));
+      res.push(CA.globalElem(e.name, convert(e.typeTerm)));
     else if (e.tag === "DefDecl")
       res.push(CA.globalElem(e.name, convert(e.typeTerm), convert(e.body)));
   };

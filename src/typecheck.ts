@@ -30,7 +30,6 @@ export type TypeError =
   | { tag: "UnboundVariableName"; name: string; range?: Range }
   | { tag: "UnboundVariableIndex"; index: string | number; range?: Range }
   | { tag: "ExpectedSort"; actual: Term; range?: Range }
-  | { tag: "ImpossibleCombination"; sort0: "Prop" | "Type"; sort1: "Prop" | "Type"; range?: Range }
   | { tag: "ExpectedPi"; fun: Term; actual: Term; range?: Range }
   | { tag: "TypeMismatch"; actual: Term; expected: Term; range?: Range };
 
@@ -39,6 +38,16 @@ type WFError = { error: TypeError; at: GlobalElement; range?: Range };
 type WithDerivation<A> = { value: A; derivation: Derivation };
 
 type TCResult<A, B> = Result<WithDerivation<A>, B>;
+
+// Small helpers so the range attached to a given error tag stays consistent
+// across the (several) places each tag can be constructed.
+function notConvertible(t0: Term, t1: Term): TypeError {
+  return { tag: "NotConvertible", eqLeft: t0, eqRight: t1, range: t0.range ?? t1.range };
+}
+
+function expectedSort(actual: Term, range?: Range): TypeError {
+  return { tag: "ExpectedSort", actual, range };
+}
 
 export function whNF(jc: JudgContext, t: Term): TCResult<Term, Term> {
   switch (t.tag) {
@@ -268,11 +277,7 @@ function convWhNF(
     }
     case "pi": {
       if (w1.tag !== "pi")
-        return err({
-          tag: "NotConvertible",
-          eqLeft: t0,
-          eqRight: t1,
-        });
+        return err(notConvertible(t0, t1));
       const typeResult = conv(jc, w0.type, w1.type);
       if (isErr(typeResult)) return typeResult;
       const newJc = pushLocal(jc, w0.type);
@@ -296,11 +301,7 @@ function convWhNF(
     }
     case "app": {
       if (w1.tag !== "app")
-        return err({
-          tag: "NotConvertible",
-          eqLeft: t0,
-          eqRight: t1,
-        });
+        return err(notConvertible(t0, t1));
       const funResult = conv(jc, w0.fun, w1.fun);
       if (isErr(funResult)) return funResult;
       const argResult = conv(jc, w0.arg, w1.arg);
@@ -338,11 +339,7 @@ function convWhNF(
     };
     return succ({ value: unit, derivation: der });
   }
-  return err({
-    tag: "NotConvertible",
-    eqLeft: t0,
-    eqRight: t1,
-  });
+  return err(notConvertible(t0, t1));
 }
 
 function conv(jc: JudgContext, t0: Term, t1: Term): TCResult<Unit, TypeError> {
@@ -386,10 +383,7 @@ function wellFormedLocal(jc: JudgContext): TCResult<Unit, TypeError> {
     const sNF = isSucc(sWhnf) ? sWhnf.succ.value : sWhnf.err;
     const sDer = isSucc(sWhnf) ? [sWhnf.succ.derivation] : [];
     if (sNF.tag !== "sort")
-      return err({
-        tag: "ExpectedSort",
-        actual: sNF,
-      });
+      return err(expectedSort(sNF, e.type.range));
     const der: Derivation = {
       rule: "local_assm",
       judgment: {
@@ -421,6 +415,7 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
       if (t.name === "Type")
         return err({
           tag: "TypeHasNoType",
+          range: t.range,
         });
       const res = sort("Type");
       const der: Derivation = {
@@ -454,6 +449,7 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
       return err({
         tag: "UnboundVariableName",
         name: t.name,
+        range: t.range,
       });
     }
     case "bind": {
@@ -477,6 +473,7 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
       return err({
         tag: "UnboundVariableIndex",
         index: t.idx,
+        range: t.range,
       });
     }
     case "lam": {
@@ -490,10 +487,7 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
       const sNF = isSucc(sWhNF) ? sWhNF.succ.value : sWhNF.err;
       const sDer = isSucc(sWhNF) ? [sWhNF.succ.derivation] : [];
       if (sNF.tag !== "sort")
-        return err({
-          tag: "ExpectedSort",
-          actual: sNF,
-        });
+        return err(expectedSort(sNF, t.range));
       const der: Derivation = {
         rule: "abstraction",
         judgment: {
@@ -513,10 +507,7 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
       const s0NF = isSucc(s0WhNF) ? s0WhNF.succ.value : s0WhNF.err;
       const s0Der = isSucc(s0WhNF) ? [s0WhNF.succ.derivation] : [];
       if (s0NF.tag !== "sort")
-        return err({
-          tag: "ExpectedSort",
-          actual: s0NF,
-        });
+        return err(expectedSort(s0NF, t.type.range));
       const newJc = pushLocal(jc, t.type);
       const s1 = typeInfer(newJc, t.body);
       if (isErr(s1)) return s1;
@@ -524,10 +515,7 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
       const s1NF = isSucc(s1WhNF) ? s1WhNF.succ.value : s1WhNF.err;
       const s1Der = isSucc(s1WhNF) ? [s1WhNF.succ.derivation] : [];
       if (s1NF.tag !== "sort")
-        return err({
-          tag: "ExpectedSort",
-          actual: s1NF,
-        });
+        return err(expectedSort(s1NF, t.body.range));
       const der: Derivation = {
         rule: "product",
         judgment: {
@@ -587,6 +575,7 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
           tag: "ExpectedPi",
           fun: fun,
           actual: funTypeNF,
+          range: t.fun.range,
         });
       }
       const argType = typeInfer(jc, t.arg);
@@ -597,6 +586,7 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
           tag: "TypeMismatch",
           actual: argType.succ.value,
           expected: funTypeNF.type,
+          range: t.arg.range,
         });
       const res = subst(funTypeNF.body, 0, t.arg);
       const der: Derivation = {
@@ -641,10 +631,7 @@ function typeCheck(
   const sNF = isSucc(sWhNF) ? sWhNF.succ.value : sWhNF.err;
   const sDer = isSucc(sWhNF) ? [sWhNF.succ.derivation] : [];
   if (sNF.tag !== "sort")
-    return err({
-      tag: "ExpectedSort",
-      actual: sNF,
-    });
+    return err(expectedSort(sNF, expected.range));
   const inferred = typeInfer(jc, t);
   if (isErr(inferred)) return inferred;
   const resConv = conv(jc, inferred.succ.value, expectedNF);
@@ -653,6 +640,7 @@ function typeCheck(
       tag: "TypeMismatch",
       actual: inferred.succ.value,
       expected: expectedNF,
+      range: t.range,
     });
   const der: Derivation = {
     rule: "check_conv",
@@ -685,18 +673,14 @@ export function wellFormedGlobal(
   for (const e of global) {
     if (e.tag === "Var") {
       const s = typeInfer(judgCtx(g, []), e.type);
-      if (isErr(s)) return err({ error: s.err, at: e });
+      if (isErr(s)) return err({ error: s.err, at: e, range: s.err.range ?? e.type.range });
       const sWhNF = whNF(judgCtx(g, []), s.succ.value);
       const sNF = isSucc(sWhNF) ? sWhNF.succ.value : sWhNF.err;
       const sDer = isSucc(sWhNF) ? [sWhNF.succ.derivation] : [];
-      if (sNF.tag !== "sort")
-        return err({
-          error: {
-            tag: "ExpectedSort",
-            actual: sNF,
-          },
-          at: e,
-        });
+      if (sNF.tag !== "sort") {
+        const error = expectedSort(sNF, e.type.range);
+        return err({ error, at: e, range: error.range });
+      }
       g.push(e);
       const der: Derivation = {
         rule: "wf_global_assm",
@@ -709,7 +693,7 @@ export function wellFormedGlobal(
       res.set(e.name, { elem: e, derivation: der });
     } else {
       const r = typeCheck(judgCtx(g, []), e.def, e.type);
-      if (isErr(r)) return err({ error: r.err, at: e });
+      if (isErr(r)) return err({ error: r.err, at: e, range: r.err.range ?? e.def.range });
       g.push(e);
       const der: Derivation = {
         rule: "wf_global_def",

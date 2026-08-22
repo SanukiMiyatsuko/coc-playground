@@ -11,11 +11,5 @@ export const err = <B>(err: B): Err<B> => ({ tag: "err", err });
 export const isSucc = <A, B>(vali: Result<A, B>): vali is Succ<A> => vali.tag === "succ";
 export const isErr = <A, B>(vali: Result<A, B>): vali is Err<B> => vali.tag === "err";
 
-export const tapErr = <A, B>(r: Result<A, B>) => (f: (e: B) => void): Result<A, B> => {
-  if (isErr(r))
-    f(r.err);
-  return r;
-};
-
 export type Unit = { tag: "Unit" };
 export const unit: Unit = { tag: "Unit" };

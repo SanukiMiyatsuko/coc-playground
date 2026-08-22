@@ -39,8 +39,6 @@ type WithDerivation<A> = { value: A; derivation: Derivation };
 
 type TCResult<A, B> = Result<WithDerivation<A>, B>;
 
-// Small helpers so the range attached to a given error tag stays consistent
-// across the (several) places each tag can be constructed.
 function notConvertible(t0: Term, t1: Term): TypeError {
   return { tag: "NotConvertible", eqLeft: t0, eqRight: t1, range: t0.range ?? t1.range };
 }

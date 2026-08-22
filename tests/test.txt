@@ -1,8 +1,8 @@
-def Truth: Prop := forall A: Prop, A -> A
+def Truth := forall A : Prop, A -> A
 
-def id: Truth := fun (A : Prop) (x : A) => x
+def id : Truth := fun (A : Prop) (x : A) => x
 
-def Eq (A : Prop) (a b : A) : Prop := forall P : A -> Prop, P a -> P b
+def Eq (A : Prop) (a b : A) := forall P : A -> Prop, P a -> P b
 
 def subst_Eq (A : Prop) (P : A -> Prop) (a b : A) (eq : Eq A a b) (pa : P a) : P b :=
   eq P pa
@@ -11,7 +11,7 @@ def ref_Eq (A : Prop) (a : A) : Eq A a a := fun P : A -> Prop => id (P a)
 
 def symm_Eq (A : Prop) (a b : A) : Eq A a b -> Eq A b a :=
   fun (eqab : Eq A a b) (P : A -> Prop) =>
-    let q : (P a -> P a) -> P b -> P a := eqab (fun x : A => P x -> P a) in
+    let q := eqab (fun x : A => P x -> P a) in
     q (id (P a))
 
 def trans_Eq (A : Prop) (a b c : A) : Eq A a b -> Eq A b c -> Eq A a c :=

@@ -28,8 +28,6 @@ export type NotConvertible = { tag: "NotConvertible"; eqLeft: Term; eqRight: Ter
 
 export type TypeError =
   | { tag: "TypeHasNoType"; range?: Range }
-  | { tag: "UnboundVariableName"; name: string; range?: Range }
-  | { tag: "UnboundVariableIndex"; index: string | number; range?: Range }
   | { tag: "ExpectedSort"; actual: Term; range?: Range }
   | { tag: "ExpectedPi"; fun: Term; actual: Term; range?: Range }
   | { tag: "TypeMismatch"; actual: Term; expected: Term; range?: Range; cause: NotConvertible };
@@ -213,23 +211,17 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
     }
 
     case "free": {
-      const ge = jc.global.find((e) => e.name === t.name);
-      if (ge) {
-        const res = ge.type!;
-        return succ({ value: res, derivation: mkDer("constant", synJ(jc, t, res), []) });
-      }
-      return err({ tag: "UnboundVariableName", name: t.name, range: t.range });
+      const ge = jc.global.find((e) => e.name === t.name)!;
+      const res = ge.type!;
+      return succ({ value: res, derivation: mkDer("constant", synJ(jc, t, res), []) });
     }
 
     case "bind": {
       const r = wellFormedLocal(jc);
       if (isErr(r)) return r;
-      const le = jc.local[t.idx];
-      if (le) {
-        const res = shift(le.type, t.idx + 1, 0);
-        return succ({ value: res, derivation: mkDer("variable", synJ(jc, t, res), [r.succ.derivation]) });
-      }
-      return err({ tag: "UnboundVariableIndex", index: t.idx, range: t.range });
+      const le = jc.local[t.idx]!;
+      const res = shift(le.type, t.idx + 1, 0);
+      return succ({ value: res, derivation: mkDer("variable", synJ(jc, t, res), [r.succ.derivation]) });
     }
 
     case "lam": {

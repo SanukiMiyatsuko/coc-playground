@@ -28,7 +28,7 @@ export type TypeError =
   | { tag: "NotConvertible"; eqLeft: Term; eqRight: Term; range?: Range }
   | { tag: "TypeHasNoType"; range?: Range }
   | { tag: "UnboundVariableName"; name: string; range?: Range }
-  | { tag: "UnboundVariableIndex"; index: number; range?: Range }
+  | { tag: "UnboundVariableIndex"; index: string | number; range?: Range }
   | { tag: "ExpectedSort"; actual: Term; range?: Range }
   | { tag: "ImpossibleCombination"; sort0: "Prop" | "Type"; sort1: "Prop" | "Type"; range?: Range }
   | { tag: "ExpectedPi"; fun: Term; actual: Term; range?: Range }

@@ -3,6 +3,7 @@ import { type TokenizerError, Tokenizer } from "./tokenizer";
 import { type ParserError, Parser } from "./parser";
 import { type ScopeError, scopeCheckProgram } from "./scope-check";
 import { desugarProgram } from "./desugar";
+import { type Term } from "./core-ast";
 import { elabGlobalContext } from "./desugared-to-core";
 import { type TypeError, wellFormedGlobal } from "./typecheck";
 
@@ -50,7 +51,7 @@ function runner(text: string) {
   const desugared = desugarProgram(parsed.succ);
   const core = elabGlobalContext(desugared);
   const well = wellFormedGlobal(core);
-  if (isErr(well)) return `${well.err.error.tag === "TypeMismatch" ? `act : ${JSON.stringify(well.err.error.actual)}, exp : ${JSON.stringify(well.err.error.expected)}` : ""}`;
+  if (isErr(well)) return `typecheck`;
   return "ok";
 }
 

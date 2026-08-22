@@ -2,7 +2,7 @@ Program ::= Decl* EOF
 
 Decl ::=
   | "var" Ident BinderList? ":" Term
-  | "def" Ident BinderList? ":" Term ":=" Term
+  | "def" Ident BinderList? ( ":" Term )? ":=" Term
   | "eval" Term
 
 Term ::=
@@ -13,7 +13,7 @@ Term ::=
 
 LamTerm ::= "fun" ( Binder | BinderList ) "=>" Term
 PiTerm ::= "forall" ( Binder | BinderList ) "," Term
-LetTerm ::= "let" Ident BinderList? ":" Term ":=" Term "in" Term
+LetTerm ::= "let" Ident BinderList? ( ":" Term )? ":=" Term "in" Term
 
 BinderList ::= ( "(" Binder ")" )+
 Binder ::= Ident+ ":" Term

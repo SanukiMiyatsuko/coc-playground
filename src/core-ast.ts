@@ -7,7 +7,7 @@ export type Term =
   | { tag: "lam"; type: Term; body: Term; range?: Range }
   | { tag: "pi"; type: Term; body: Term; range?: Range }
   | { tag: "app"; fun: Term; arg: Term; range?: Range }
-  | { tag: "letin"; type: Term; def: Term; body: Term; range?: Range }
+  | { tag: "letin"; type?: Term; def: Term; body: Term; range?: Range }
 
 export const sort = (name: "Prop" | "Type", range?: Range): Term => ({ tag: "sort", name, range });
 export const free = (name: string, range?: Range): Term => ({ tag: "free", name, range });
@@ -15,16 +15,17 @@ export const bind = (idx: number, range?: Range): Term => ({ tag: "bind", idx, r
 export const lam = (type: Term, body: Term, range?: Range): Term => ({ tag: "lam", type, body, range });
 export const pi = (type: Term, body: Term, range?: Range): Term => ({ tag: "pi", type, body, range });
 export const app = (fun: Term, arg: Term, range?: Range): Term => ({ tag: "app", fun, arg, range });
-export const letin = (type: Term, def: Term, body: Term, range?: Range): Term => ({ tag: "letin", type, def, body, range });
+export const letin = (type: Term | undefined, def: Term, body: Term, range?: Range): Term =>
+  ({ tag: "letin", type, def, body, range });
 
 export type GlobalElement =
   | { tag: "Var"; name: string; type: Term }
-  | { tag: "Def"; name: string; type: Term; def: Term };
+  | { tag: "Def"; name: string; type?: Term; def: Term };
 
 export type GlobalContext = GlobalElement[];
 
-export const globalElem = (name: string, type: Term, def?: Term): GlobalElement =>
-  def ? { tag: "Def", name, type, def } : { tag: "Var", name, type };
+export const globalVar = (name: string, type: Term): GlobalElement => ({ tag: "Var", name, type });
+export const globalDef = (name: string, def: Term, type?: Term): GlobalElement => ({ tag: "Def", name, type, def });
 
 export type LocalElement =
   | { tag: "Var"; type: Term }

@@ -15,7 +15,11 @@ export function shift(t: Term, d: number, c: number): Term {
     case "app":
       return Core.app(shift(t.fun, d, c), shift(t.arg, d, c));
     case "letin":
-      return Core.letin(shift(t.type, d, c), shift(t.def, d, c), shift(t.body, d, c + 1));
+      return Core.letin(
+        t.type ? shift(t.type, d, c) : undefined,
+        shift(t.def, d, c),
+        shift(t.body, d, c + 1),
+      );
   }
 }
 
@@ -35,7 +39,11 @@ export function subst(t: Term, idx: number, u: Term): Term {
     case "app":
       return Core.app(subst(t.fun, idx, u), subst(t.arg, idx, u));
     case "letin":
-      return Core.letin(subst(t.type, idx, u), subst(t.def, idx, u), subst(t.body, idx + 1, shift(u, 1, 0)));
+      return Core.letin(
+        t.type ? subst(t.type, idx, u) : undefined,
+        subst(t.def, idx, u),
+        subst(t.body, idx + 1, shift(u, 1, 0)),
+      );
   }
 }
 
@@ -56,7 +64,7 @@ export function alphaEq(t1: Term, t2: Term): boolean {
     case "letin":
       return (
         t2.tag === "letin" &&
-        alphaEq(t1.type, t2.type) &&
+        (t1.type === undefined ? t2.type === undefined : t2.type !== undefined && alphaEq(t1.type, t2.type)) &&
         alphaEq(t1.def, t2.def) &&
         alphaEq(t1.body, t2.body)
       );

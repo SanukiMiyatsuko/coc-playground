@@ -215,7 +215,7 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
     case "free": {
       const ge = jc.global.find((e) => e.name === t.name);
       if (ge) {
-        const res = ge.type;
+        const res = ge.type!;
         return succ({ value: res, derivation: mkDer("constant", synJ(jc, t, res), []) });
       }
       return err({ tag: "UnboundVariableName", name: t.name, range: t.range });
@@ -265,14 +265,25 @@ function typeInfer(jc: JudgContext, t: Term): TCResult<Term, TypeError> {
     }
 
     case "letin": {
-      const defTypeResult = typeCheck(jc, t.def, t.type);
-      if (isErr(defTypeResult)) return defTypeResult;
-      const bodyType = typeInfer(pushLocal(jc, t.type, t.def), t.body);
+      let defType: Term;
+      let defDerivation: Derivation;
+      if (t.type !== undefined) {
+        const defTypeResult = typeCheck(jc, t.def, t.type);
+        if (isErr(defTypeResult)) return defTypeResult;
+        defType = t.type;
+        defDerivation = defTypeResult.succ.derivation;
+      } else {
+        const inferred = typeInfer(jc, t.def);
+        if (isErr(inferred)) return inferred;
+        defType = inferred.succ.value;
+        defDerivation = inferred.succ.derivation;
+      }
+      const bodyType = typeInfer(pushLocal(jc, defType, t.def), t.body);
       if (isErr(bodyType)) return bodyType;
       const res = subst(bodyType.succ.value, 0, t.def);
       return succ({
         value: res,
-        derivation: mkDer("let", synJ(jc, t, res), [defTypeResult.succ.derivation, bodyType.succ.derivation]),
+        derivation: mkDer("let", synJ(jc, t, res), [defDerivation, bodyType.succ.derivation]),
       });
     }
 
@@ -347,11 +358,20 @@ export function wellFormedGlobal(global: GlobalContext): Result<WFGSucc, WFError
       }
       g.push(e);
       res.set(e.name, { elem: e, derivation: mkDer("wf_global_assm", wfJ(judgCtx(g, [])), [...sDer, s.succ.derivation]) });
-    } else {
+      continue;
+    }
+
+    if (e.type !== undefined) {
       const r = typeCheck(judgCtx(g, []), e.def, e.type);
       if (isErr(r)) return err({ error: r.err, at: e, range: r.err.range ?? e.def.range });
       g.push(e);
       res.set(e.name, { elem: e, derivation: mkDer("wf_global_def", wfJ(judgCtx(g, [])), [r.succ.derivation]) });
+    } else {
+      const inferred = typeInfer(judgCtx(g, []), e.def);
+      if (isErr(inferred)) return err({ error: inferred.err, at: e, range: inferred.err.range ?? e.def.range });
+      const resolved: GlobalElement = { tag: "Def", name: e.name, type: inferred.succ.value, def: e.def };
+      g.push(resolved);
+      res.set(e.name, { elem: resolved, derivation: mkDer("wf_global_def_inferred", wfJ(judgCtx(g, [])), [inferred.succ.derivation]) });
     }
   }
   return succ(res);

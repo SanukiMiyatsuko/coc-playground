@@ -42,6 +42,14 @@ function desugarPi(binders: readonly SA.Binder[], body: SA.Term, range: Range): 
   );
 }
 
+// Wraps an optional declared type in the Pi type formed by the binders,
+// leaving it as `undefined` when no annotation was written. A missing type
+// is resolved later by inference (see typecheck.ts), not here — desugaring
+// never invents a type term.
+function desugarOptPi(binders: readonly SA.Binder[], body: SA.Term | undefined, range: Range): DA.Term | undefined {
+  return body === undefined ? undefined : desugarPi(binders, body, range);
+}
+
 export const desugarTerm = (term: SA.Term): DA.Term => {
   switch (term.tag) {
     case "Sort":
@@ -60,7 +68,7 @@ export const desugarTerm = (term: SA.Term): DA.Term => {
       return {
         tag: "LetTerm",
         name: term.name,
-        typeTerm: desugarPi(term.binders, term.typeTerm, term.range),
+        typeTerm: desugarOptPi(term.binders, term.typeTerm, term.range),
         value: desugarLam(term.binders, term.value, term.range),
         inTerm: desugarTerm(term.inTerm),
         range: term.range,
@@ -114,7 +122,7 @@ export const desugarDecl = (decl: SA.Decl): DA.Decl => {
         tag: "DefDecl",
         name: decl.name,
         nameRange: decl.nameRange,
-        typeTerm: desugarPi(decl.binders, decl.typeTerm, decl.range),
+        typeTerm: desugarOptPi(decl.binders, decl.typeTerm, decl.range),
         body: desugarLam(decl.binders, decl.body, decl.range),
         range: decl.range,
       };

@@ -64,8 +64,10 @@ function checkTerm(
       if (isErr(bindersRes)) return bindersRes;
       const innerLocals = bindersRes.succ;
 
-      const typeRes = checkTerm(term.typeTerm, innerLocals, globals, selfPending);
-      if (isErr(typeRes)) return typeRes;
+      if (term.typeTerm !== undefined) {
+        const typeRes = checkTerm(term.typeTerm, innerLocals, globals, selfPending);
+        if (isErr(typeRes)) return typeRes;
+      }
 
       const valueRes = checkTerm(term.value, innerLocals, globals, selfPending);
       if (isErr(valueRes)) return valueRes;
@@ -105,8 +107,10 @@ function checkDecl(
       if (isErr(bindersRes)) return bindersRes;
       const innerLocals = bindersRes.succ;
 
-      const typeRes = checkTerm(decl.typeTerm, innerLocals, globals, selfPending);
-      if (isErr(typeRes)) return typeRes;
+      if (decl.typeTerm !== undefined) {
+        const typeRes = checkTerm(decl.typeTerm, innerLocals, globals, selfPending);
+        if (isErr(typeRes)) return typeRes;
+      }
 
       return checkTerm(decl.body, innerLocals, globals, selfPending);
     }

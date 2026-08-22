@@ -25,7 +25,7 @@ export function elabTerm(t: DA.Term, env: string[]): CA.Term {
       );
     case "LetTerm":
       return CA.letin(
-        elabTerm(t.typeTerm, env),
+        t.typeTerm ? elabTerm(t.typeTerm, env) : undefined,
         elabTerm(t.value, env),
         elabTerm(t.inTerm, [t.name, ...env]),
         t.range
@@ -44,9 +44,9 @@ export function elabGlobalContext(ctx: DA.Program): CA.GlobalContext {
   for (const e of ctx) {
     const convert = (t: DA.Term) => elabTerm(t, []);
     if (e.tag === "VarDecl")
-      res.push(CA.globalElem(e.name, convert(e.typeTerm)));
+      res.push(CA.globalVar(e.name, convert(e.typeTerm)));
     else if (e.tag === "DefDecl")
-      res.push(CA.globalElem(e.name, convert(e.typeTerm), convert(e.body)));
+      res.push(CA.globalDef(e.name, convert(e.body), e.typeTerm ? convert(e.typeTerm) : undefined));
   };
   return res;
 }

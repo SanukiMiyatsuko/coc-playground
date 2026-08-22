@@ -80,9 +80,7 @@ export class Parser {
         if (isErr(name)) return name;
         const binders = this.parseOptBinderList();
         if (isErr(binders)) return binders;
-        const colon = this.expect("COLON", "':'");
-        if (isErr(colon)) return colon;
-        const typeTerm = this.parseTerm();
+        const typeTerm = this.parseOptTypeAnnotation();
         if (isErr(typeTerm)) return typeTerm;
         const assign = this.expect("ASSIGN", "':='");
         if (isErr(assign)) return assign;
@@ -172,9 +170,7 @@ export class Parser {
     if (isErr(name)) return name;
     const binders = this.parseOptBinderList();
     if (isErr(binders)) return binders;
-    const colon = this.expect("COLON", "':'");
-    if (isErr(colon)) return colon;
-    const typeTerm = this.parseTerm();
+    const typeTerm = this.parseOptTypeAnnotation();
     if (isErr(typeTerm)) return typeTerm;
     const assign = this.expect("ASSIGN", "':='");
     if (isErr(assign)) return assign;
@@ -298,6 +294,12 @@ export class Parser {
     const typeTerm = this.parseTerm();
     if (isErr(typeTerm)) return typeTerm;
     return succ({ names, typeTerm: typeTerm.succ });
+  }
+
+  private parseOptTypeAnnotation(): Result<AST.Term | undefined, ParserError> {
+    if (!this.check("COLON")) return succ(undefined);
+    this.advance();
+    return this.parseTerm();
   }
 
   static parseProgram(tokens: Token[]): Result<AST.Program, ParserError> {

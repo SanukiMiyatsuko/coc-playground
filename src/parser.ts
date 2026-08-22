@@ -71,6 +71,7 @@ export class Parser {
           nameRange: name.succ.range,
           binders: binders.succ,
           typeTerm: typeTerm.succ,
+          range: { start: name.succ.range.start, end: typeTerm.succ.range.end },
         });
       }
       case "RES_DEF": {
@@ -94,13 +95,18 @@ export class Parser {
           binders: binders.succ,
           typeTerm: typeTerm.succ,
           body: body.succ,
+          range: { start: name.succ.range.start, end: body.succ.range.end },
         });
       }
       case "RES_EVAL": {
         this.advance();
         const term = this.parseTerm();
         if (isErr(term)) return term;
-        return succ({ tag: "EvalDecl", term: term.succ });
+        return succ({
+          tag: "EvalDecl",
+          term: term.succ,
+          range: term.succ.range,
+        });
       }
       default:
         return err({
@@ -134,7 +140,12 @@ export class Parser {
     if (isErr(fatarrow)) return fatarrow;
     const body = this.parseTerm();
     if (isErr(body)) return body;
-    return succ({ tag: "LamTerm", binders: binders.succ, body: body.succ });
+    return succ({
+      tag: "LamTerm",
+      binders: binders.succ,
+      body: body.succ,
+      range: { start: fun.succ.range.start, end: body.succ.range.end },
+    });
   }
 
   private parsePiTerm(): Result<AST.Term, ParserError> {
@@ -146,7 +157,12 @@ export class Parser {
     if (isErr(comma)) return comma;
     const body = this.parseTerm();
     if (isErr(body)) return body;
-    return succ({ tag: "PiTerm", binders: binders.succ, body: body.succ });
+    return succ({
+      tag: "PiTerm",
+      binders: binders.succ,
+      body: body.succ,
+      range: { start: forall.succ.range.start, end: body.succ.range.end },
+    });
   }
 
   private parseLetTerm(): Result<AST.Term, ParserError> {
@@ -175,6 +191,7 @@ export class Parser {
       typeTerm: typeTerm.succ,
       value: value.succ,
       inTerm: inTerm.succ,
+      range: { start: letTok.succ.range.start, end: inTerm.succ.range.end },
     });
   }
 
@@ -189,7 +206,13 @@ export class Parser {
       other.push(next.succ);
     }
     if (other.length === 0) return succ(fst.succ);
-    return succ({ tag: "ArrowTerm", fst: fst.succ, other });
+    const last = other[other.length - 1]!;
+    return succ({
+      tag: "ArrowTerm",
+      fst: fst.succ,
+      other,
+      range: { start: fst.succ.range.start, end: last.range.end },
+    });
   }
 
   private parseAppTerm(): Result<AST.Term, ParserError> {
@@ -202,7 +225,13 @@ export class Parser {
       other.push(next.succ);
     }
     if (other.length === 0) return succ(fst.succ);
-    return succ({ tag: "AppTerm", fst: fst.succ, other });
+    const last = other[other.length - 1]!;
+    return succ({
+      tag: "AppTerm",
+      fst: fst.succ,
+      other,
+      range: { start: fst.succ.range.start, end: last.range.end },
+    });
   }
 
   private parseAtomicTerm(): Result<AST.Term, ParserError> {
@@ -210,10 +239,10 @@ export class Parser {
     switch (t.type) {
       case "RES_PROP":
         this.advance();
-        return succ({ tag: "Sort", value: "Prop" });
+        return succ({ tag: "Sort", value: "Prop", range: t.range });
       case "RES_TYPE":
         this.advance();
-        return succ({ tag: "Sort", value: "Type" });
+        return succ({ tag: "Sort", value: "Type", range: t.range });
       case "IDENT":
         this.advance();
         return succ({ tag: "Ident", name: t.value, range: t.range });

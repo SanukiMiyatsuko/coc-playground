@@ -4,33 +4,37 @@ import * as CA from "./core-ast";
 export function elabTerm(t: DA.Term, env: string[]): CA.Term {
   switch (t.tag) {
     case "Sort":
-      return CA.sort(t.value);
+      return CA.sort(t.value, t.range);
     case "Ident": {
       const index = env.indexOf(t.name);
       return index === -1
-        ? CA.free(t.name)
-        : CA.bind(index);
+        ? CA.free(t.name, t.range)
+        : CA.bind(index, t.range);
     }
     case "LamTerm":
       return CA.lam(
         elabTerm(t.typeTerm, env),
-        elabTerm(t.body, [t.name, ...env])
+        elabTerm(t.body, [t.name, ...env]),
+        t.range
       );
     case "PiTerm":
       return CA.pi(
         elabTerm(t.typeTerm, env),
-        elabTerm(t.body, [t.name, ...env])
+        elabTerm(t.body, [t.name, ...env]),
+        t.range
       );
     case "LetTerm":
       return CA.letin(
         elabTerm(t.typeTerm, env),
         elabTerm(t.value, env),
-        elabTerm(t.inTerm, [t.name, ...env])
+        elabTerm(t.inTerm, [t.name, ...env]),
+        t.range
       );
     case "AppTerm":
       return CA.app(
         elabTerm(t.func, env),
-        elabTerm(t.arg, env)
+        elabTerm(t.arg, env),
+        t.range
       );
   }
 }

@@ -1,19 +1,21 @@
-export type Term =
-  | { tag: "sort"; name: "Prop" | "Type" }
-  | { tag: "free"; name: string }
-  | { tag: "bind"; idx: number }
-  | { tag: "lam"; type: Term; body: Term }
-  | { tag: "pi"; type: Term; body: Term }
-  | { tag: "app"; fun: Term; arg: Term }
-  | { tag: "letin"; type: Term; def: Term; body: Term }
+import type { Range } from "./junction-defs";
 
-export const sort = (name: "Prop" | "Type"): Term => ({ tag: "sort", name });
-export const free = (name: string): Term => ({ tag: "free", name });
-export const bind = (idx: number): Term => ({ tag: "bind", idx });
-export const lam = (type: Term, body: Term): Term => ({ tag: "lam", type, body });
-export const pi = (type: Term, body: Term): Term => ({ tag: "pi", type, body });
-export const app = (fun: Term, arg: Term): Term => ({ tag: "app", fun, arg });
-export const letin = (type: Term, def: Term, body: Term): Term => ({ tag: "letin", type, def, body });
+export type Term =
+  | { tag: "sort"; name: "Prop" | "Type"; range?: Range }
+  | { tag: "free"; name: string; range?: Range }
+  | { tag: "bind"; idx: number; range?: Range }
+  | { tag: "lam"; type: Term; body: Term; range?: Range }
+  | { tag: "pi"; type: Term; body: Term; range?: Range }
+  | { tag: "app"; fun: Term; arg: Term; range?: Range }
+  | { tag: "letin"; type: Term; def: Term; body: Term; range?: Range }
+
+export const sort = (name: "Prop" | "Type", range?: Range): Term => ({ tag: "sort", name, range });
+export const free = (name: string, range?: Range): Term => ({ tag: "free", name, range });
+export const bind = (idx: number, range?: Range): Term => ({ tag: "bind", idx, range });
+export const lam = (type: Term, body: Term, range?: Range): Term => ({ tag: "lam", type, body, range });
+export const pi = (type: Term, body: Term, range?: Range): Term => ({ tag: "pi", type, body, range });
+export const app = (fun: Term, arg: Term, range?: Range): Term => ({ tag: "app", fun, arg, range });
+export const letin = (type: Term, def: Term, body: Term, range?: Range): Term => ({ tag: "letin", type, def, body, range });
 
 export type GlobalElement =
   | { tag: "Var"; name: string; type: Term }
